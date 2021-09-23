@@ -26,14 +26,14 @@ function getByteLength(str: string): number {
 /**
  *
  *  Validates if the given address satisfies the format used on the Pocket Blockchain.
- *  Pocket addresses are not checksummed, so the method follow is check if its:
+ *  Pocket addresses are not checksummed, so the method to follow is check if its:
  *  1. A valid hex string, AND
- *  2. it's length in bytes is 20.
- * @param {string} str - Address to be verified.
+ *  2. its length in bytes is 20.
+ * @param {string} address - Address to be verified.
  * @returns {boolean} - If the address is valid or not.
  */
-export function isAddress(str: string): boolean {
-  if (isHex(str) && getByteLength(str) === 20) {
+export function isAddress(address: string): boolean {
+  if (isHex(address) && getByteLength(address) === 20) {
     return true;
   }
   return false;
