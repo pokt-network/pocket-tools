@@ -1,8 +1,8 @@
 {
-  "name": "pocket-knife",
-  "version": "1.0.0",
-  "description": "Pocket Swiss Army Knife for the POKT blockchain.",
-  "author": "Enrique Ortiz",
+  "name": "pocket-tools",
+  "version": "0.1.0",
+  "description": "Everyday, handy tools for the Pocket blockchain",
+  "author": "@evalir",
   "license": "MIT",
   "main": "dist/index-node.js",
   "module": "dist/index.mjs",
