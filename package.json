@@ -4,7 +4,7 @@
   "description": "Everyday, handy tools for the Pocket blockchain",
   "author": "@evalir",
   "license": "MIT",
-  "main": "dist/index-node.js",
+  "main": "dist/index.js",
   "module": "dist/index.mjs",
   "browser": "dist/index.mjs",
   "types": "dist/index.d.ts",
