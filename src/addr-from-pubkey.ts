@@ -12,8 +12,8 @@ function hexStringToByte(str: string): Uint8Array {
 
 /**
  * Converts an Application's Public Key into an address.
- * @param publicKey Application's public key
- * @returns Application's address
+ * @param publicKey the application's public key
+ * @returns the application's address
  */
 export async function getAddressFromPublicKey(
   publicKey: string
