@@ -11,11 +11,6 @@ const WHITELISTED_RPC_METHODS = new Map([
   ["HEIGHT", "query/height"],
 ]);
 
-type Coin = {
-  amount: string | bigint;
-  denom: "upokt" | "pokt";
-};
-
 type AppQueryParams = {
   height: number;
 };
@@ -48,13 +43,16 @@ export async function getHeight(): Promise<number> {
 
 export async function getAccount(
   address: string,
-  { height = 0 }: AppQueryParams
+  { height = 0 }: AppQueryParams = { height: 0 }
 ): Promise<AppQueryResponse> {
   if (!isAddress(address)) {
     throw new InvalidAddressError("Address is not a valid POKT address");
   }
   const res = await fetch(composeMethodURL("ACCOUNT"), {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ address, height }),
   });
 
