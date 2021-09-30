@@ -1,5 +1,5 @@
-import { getAddressFromPublicKey } from "./addr-from-pubkey";
-import { isAddress } from './is-address'
-import { poktToUpokt } from "./pokt-to-upokt";
-
-export { getAddressFromPublicKey, isAddress, poktToUpokt };
+export * from "./addr-from-pubkey";
+export * from "./pokt-to-upokt";
+export * from './errors'
+export * from './is-address'
+import * as a from './rpc'
