@@ -32,44 +32,44 @@ export enum TransactionType {
   Unknown = 'Unknown'
 }
 
-type AppStakeMessage = {
+export type AppStakeMessage = {
   chains: string[];
   value: bigint;
 };
 
-type AppUnstakeMessage = {
+export type AppUnstakeMessage = {
   address: string;
 };
 
-type SendMessage = {
+export type SendMessage = {
   to: string;
 };
 
-type NodeStakeMessage = {
+export type NodeStakeMessage = {
   chains: string[];
   serviceUrl: string;
   value: bigint;
 };
 
-type NodeUnstakeMessage = AppUnstakeMessage;
+export type NodeUnstakeMessage = AppUnstakeMessage;
 
-type NodeUnjailMessage = AppUnstakeMessage;
+export type NodeUnjailMessage = AppUnstakeMessage;
 
-type ClaimMessage = {
+export type ClaimMessage = {
   chain: string;
   sessionHeight: string;
   appPublicKey: string;
   totalProofs: bigint;
 };
 
-type ProofMessage = {
+export type ProofMessage = {
   appPublicKey: string;
   chain: string;
   requestHash: string
   sessionHeight: string;
 };
 
-type TransactionMessage =
+export type TransactionMessage =
   | AppStakeMessage
   | AppUnstakeMessage
   | ClaimMessage
@@ -79,22 +79,22 @@ type TransactionMessage =
   | SendMessage
   | NodeUnjailMessage;
 
-type QueryOptions = {
+export type QueryOptions = {
   rpcUrl?: string;
 };
 
-type AccountQueryParams = {
+export type AccountQueryParams = {
   height: number;
 } & QueryOptions;
 
-type AccountQueryResponse = {
+export type AccountQueryResponse = {
   address: string;
   balance: string;
 };
 
-type AppQueryParams = AccountQueryParams;
+export type AppQueryParams = AccountQueryParams;
 
-type AppQueryResponse = {
+export type AppQueryResponse = {
   address: string;
   chains: string[];
   maxRelays: bigint;
@@ -104,21 +104,21 @@ type AppQueryResponse = {
   unstakingTime: string;
 };
 
-type AppsQueryParams = AppQueryParams & {
+export type AppsQueryParams = AppQueryParams & {
   page: number;
   perPage: number;
   stakingStatus: StakingStatus;
 };
 
-type AppsQueryResponse = AppQueryResponse[];
+export type AppsQueryResponse = AppQueryResponse[];
 
-type AccountHistoryQueryParams = {
+export type AccountHistoryQueryParams = {
   page: number;
   perPage: number;
   sort: "desc" | "asc";
 } & AccountQueryParams;
 
-type AccountHistoryQueryResponse = {
+export type AccountHistoryQueryResponse = {
   fee: bigint;
   hash: string;
   height: string;
@@ -405,7 +405,6 @@ export async function getAccountHistory(
       index: tx.index,
       memo: tx.stdTx.memo,
       type: transactionType,
-      // TODO: parse value and add extra tx metadata depending on type
       message: parseTransactionType(tx, transactionType),
     };
   });
