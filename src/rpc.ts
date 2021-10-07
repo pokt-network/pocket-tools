@@ -21,13 +21,63 @@ export enum StakingStatus {
 }
 
 export enum TransactionType {
-  Send = 0,
-  AppStake = 1,
-  AppUnstake = 2,
-  NodeStake = 3,
-  NodeUnstake = 4,
-  NodeUnjail = 5,
+  AppStake = 'AppStake',
+  AppUnstake = 'AppUnstake',
+  Claim = 'Claim',
+  NodeStake = 'NodeStake',
+  NodeUnjail = 'NodeUnjail',
+  NodeUnstake = 'NodeUnstake',
+  Proof = 'Proof',
+  Send = 'Send',
+  Unknown = 'Unknown'
 }
+
+type AppStakeMessage = {
+  chains: string[];
+  value: bigint;
+};
+
+type AppUnstakeMessage = {
+  address: string;
+};
+
+type SendMessage = {
+  to: string;
+};
+
+type NodeStakeMessage = {
+  chains: string[];
+  serviceUrl: string;
+  value: bigint;
+};
+
+type NodeUnstakeMessage = AppUnstakeMessage;
+
+type NodeUnjailMessage = AppUnstakeMessage;
+
+type ClaimMessage = {
+  chain: string;
+  sessionHeight: string;
+  appPublicKey: string;
+  totalProofs: bigint;
+};
+
+type ProofMessage = {
+  appPublicKey: string;
+  chain: string;
+  requestHash: string
+  sessionHeight: string;
+};
+
+type TransactionMessage =
+  | AppStakeMessage
+  | AppUnstakeMessage
+  | ClaimMessage
+  | NodeStakeMessage
+  | NodeUnstakeMessage
+  | ProofMessage
+  | SendMessage
+  | NodeUnjailMessage;
 
 type QueryOptions = {
   rpcUrl?: string;
@@ -75,7 +125,7 @@ type AccountHistoryQueryResponse = {
   index: string;
   memo: string;
   type: TransactionType;
-  value: bigint;
+  message: TransactionMessage;
 };
 
 function composeMethodURL(
@@ -100,28 +150,98 @@ function determineTransactionType(message: string): TransactionType {
     return TransactionType.AppUnstake;
   }
 
+  if (message === "pocketcore/proof") {
+    return TransactionType.Proof
+  }
+
+  if (message === "pocketcore/claim") {
+    return TransactionType.Claim
+  }
+
   if (message === "pos/Send") {
     return TransactionType.Send;
   }
 
   if (message === "pos/MsgProtoStake") {
-    return TransactionType.NodeStake
+    return TransactionType.NodeStake;
   }
 
   if (message === "pos/MsgStake") {
-    return TransactionType.NodeStake
+    return TransactionType.NodeStake;
   }
 
   if (message === "pos/MsgBeginUnstake") {
-    return TransactionType.NodeUnstake
+    return TransactionType.NodeUnstake;
   }
 
   if (message === "pos/MsgUnjail") {
-    return TransactionType.NodeUnjail
+    return TransactionType.NodeUnjail;
   }
 
-  // If the type's not found, just assume it is a send transaction
-  return TransactionType.Send
+  // If an user finds this, it should probably be fixed
+  return TransactionType.Unknown;
+}
+
+function parseTransactionType(
+  transaction,
+  transactionType: TransactionType
+): TransactionMessage | void {
+
+  const messageData = transaction.stdTx.msg.value
+
+  if (transactionType === TransactionType.Send) {
+    return {
+      to: messageData.to_address,
+    } as SendMessage;
+  }
+
+  if (
+    transactionType === TransactionType.NodeUnjail ||
+    transactionType === TransactionType.NodeUnstake
+  ) {
+    return {
+      address: messageData.address,
+    } as NodeUnjailMessage;
+  }
+
+  if (transactionType === TransactionType.AppUnstake) {
+    return {
+      address: messageData.application_address,
+    };
+  }
+
+  if (transactionType === TransactionType.NodeStake) {
+    return {
+      chains: messageData.chains,
+      serviceUrl: messageData.service_url,
+      value: BigInt(messageData.value),
+    } as NodeStakeMessage;
+  }
+
+  if (transactionType === TransactionType.AppStake) {
+    return {
+      chains: messageData.chains,
+      value: messageData.value,
+    } as AppStakeMessage;
+  }
+
+  if (transactionType === TransactionType.Claim) {
+    return {
+      chain: messageData.header.chain,
+      sessionHeight: messageData.header.session_height,
+      appPublicKey: messageData.header.app_public_key,
+      totalProofs: messageData.total_proofs
+    } as ClaimMessage
+  }
+
+  if (transactionType === TransactionType.Proof) {
+    return {
+      chain: messageData.leaf.value.blockchain,
+      sessionHeight: messageData.leaf.value.session_block_height,
+      appPublicKey: messageData.leaf.value.aat.app_pub_key,
+      requestHash: messageData.leaf.value.request_hash
+    } as ProofMessage
+  }
 }
 
 export async function getHeight({
@@ -275,14 +395,19 @@ export async function getAccountHistory(
     throw new RelayAttemptsExhaustedError(responseOrError.message);
   }
 
-  return responseOrError.txs.map((tx) => ({
-    fee: BigInt(tx.stdTx.fee[0].amount),
-    hash: tx.hash,
-    height: tx.height,
-    index: tx.index,
-    memo: tx.stdTx.memo,
-    type: determineTransactionType(tx.stdTx.msg.type),
-    // TODO: parse value and add extra tx metadata depending on type
-    value: tx.stdTx.msg.value.value
-  }));
+  return responseOrError.txs.map((tx) => {
+    const transactionType = determineTransactionType(tx.stdTx.msg.type);
+
+    return {
+      fee: BigInt(tx.stdTx.fee[0].amount),
+      hash: tx.hash,
+      height: tx.height,
+      index: tx.index,
+      memo: tx.stdTx.memo,
+      type: transactionType,
+      // TODO: parse value and add extra tx metadata depending on type
+      message: parseTransactionType(tx, transactionType),
+    };
+  });
 }
+
