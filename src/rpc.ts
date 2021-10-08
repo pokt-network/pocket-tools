@@ -12,6 +12,7 @@ const WHITELISTED_RPC_METHODS = new Map([
   ["APPS", "/v1/query/apps"],
   ["BLOCK", "/v1/query/block"],
   ["HEIGHT", "/v1/query/height"],
+  ["NODE", "/v1/query/node"],
 ]);
 
 export enum StakingStatus {
@@ -21,15 +22,15 @@ export enum StakingStatus {
 }
 
 export enum TransactionType {
-  AppStake = 'AppStake',
-  AppUnstake = 'AppUnstake',
-  Claim = 'Claim',
-  NodeStake = 'NodeStake',
-  NodeUnjail = 'NodeUnjail',
-  NodeUnstake = 'NodeUnstake',
-  Proof = 'Proof',
-  Send = 'Send',
-  Unknown = 'Unknown'
+  AppStake = "AppStake",
+  AppUnstake = "AppUnstake",
+  Claim = "Claim",
+  NodeStake = "NodeStake",
+  NodeUnjail = "NodeUnjail",
+  NodeUnstake = "NodeUnstake",
+  Proof = "Proof",
+  Send = "Send",
+  Unknown = "Unknown",
 }
 
 export type AppStakeMessage = {
@@ -65,7 +66,7 @@ export type ClaimMessage = {
 export type ProofMessage = {
   appPublicKey: string;
   chain: string;
-  requestHash: string
+  requestHash: string;
   sessionHeight: string;
 };
 
@@ -128,6 +129,21 @@ export type AccountHistoryQueryResponse = {
   message: TransactionMessage;
 };
 
+export type NodeQueryParams = {
+  height: number;
+} & QueryOptions;
+
+export type NodeQueryResponse = {
+  address: string;
+  chains: string[];
+  jailed: boolean;
+  publicKey: string;
+  serviceUrl: string;
+  status: StakingStatus;
+  stakedTokens: bigint;
+  unstakingTime: string;
+};
+
 function composeMethodURL(
   method: string,
   { rpcUrl = "" }: { rpcUrl?: string } = {}
@@ -151,11 +167,11 @@ function determineTransactionType(message: string): TransactionType {
   }
 
   if (message === "pocketcore/proof") {
-    return TransactionType.Proof
+    return TransactionType.Proof;
   }
 
   if (message === "pocketcore/claim") {
-    return TransactionType.Claim
+    return TransactionType.Claim;
   }
 
   if (message === "pos/Send") {
@@ -186,8 +202,7 @@ function parseTransactionType(
   transaction,
   transactionType: TransactionType
 ): TransactionMessage | void {
-
-  const messageData = transaction.stdTx.msg.value
+  const messageData = transaction.stdTx.msg.value;
 
   if (transactionType === TransactionType.Send) {
     return {
@@ -230,8 +245,8 @@ function parseTransactionType(
       chain: messageData.header.chain,
       sessionHeight: messageData.header.session_height,
       appPublicKey: messageData.header.app_public_key,
-      totalProofs: messageData.total_proofs
-    } as ClaimMessage
+      totalProofs: messageData.total_proofs,
+    } as ClaimMessage;
   }
 
   if (transactionType === TransactionType.Proof) {
@@ -239,8 +254,8 @@ function parseTransactionType(
       chain: messageData.leaf.value.blockchain,
       sessionHeight: messageData.leaf.value.session_block_height,
       appPublicKey: messageData.leaf.value.aat.app_pub_key,
-      requestHash: messageData.leaf.value.request_hash
-    } as ProofMessage
+      requestHash: messageData.leaf.value.request_hash,
+    } as ProofMessage;
   }
 }
 
@@ -373,7 +388,7 @@ export async function getAccountHistory(
     rpcUrl: "",
     sort: "desc",
   }
-): Promise<AccountHistoryQueryResponse> {
+): Promise<AccountHistoryQueryResponse[]> {
   if (!isAddress(address)) {
     throw new InvalidAddressError("Address is not a valid POKT address");
   }
@@ -404,9 +419,41 @@ export async function getAccountHistory(
       height: tx.height,
       index: tx.index,
       memo: tx.stdTx.memo,
-      type: transactionType,
       message: parseTransactionType(tx, transactionType),
+      type: transactionType,
     };
   });
 }
 
+export async function getNode(
+  address: string,
+  { height = 0, rpcUrl = "" }: NodeQueryParams = { height: 0 }
+): Promise<NodeQueryResponse> {
+  if (!isAddress(address)) {
+    throw new InvalidAddressError("Address is not a valid POKT address");
+  }
+  const res = await fetch(composeMethodURL("NODE", { rpcUrl }), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ address, height }),
+  });
+
+  const responseOrError = await res.json();
+
+  if ("message" in responseOrError) {
+    throw new RelayAttemptsExhaustedError(responseOrError.message);
+  }
+
+  return {
+    address: responseOrError.address,
+    chains: responseOrError.chains,
+    jailed: responseOrError.jailed,
+    publicKey: responseOrError.public_key,
+    serviceUrl: responseOrError.service_url,
+    stakedTokens: BigInt(responseOrError.tokens),
+    status: responseOrError.status,
+    unstakingTime: responseOrError.unstaking_time,
+  };
+}

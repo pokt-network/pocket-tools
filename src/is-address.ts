@@ -9,18 +9,16 @@ function isHex(str: string): boolean {
 }
 
 /**
- * referenced from https://stackoverflow.com/a/10121740
+ * crypto-js implementation
  * Gets the length of a hex string in its byte format
  * @param {string} str - string to check.
  * @returns {number} - The string length in bytes.
  * @memberof Hex
  */
-function getByteLength(str: string): number {
-  const a = [];
-  for (let i = 0; i < str.length; i += 2) {
-    a.push(str.substr(i, 2));
-  }
-  return a.length;
+function getByteLength(hex: string): number {
+  for (var bytes = [], c = 0; c < hex.length; c += 2)
+    bytes.push(parseInt(hex.substr(c, 2), 16));
+  return bytes.length;
 }
 
 /**
@@ -33,7 +31,11 @@ function getByteLength(str: string): number {
  * @returns {boolean} - If the address is valid or not.
  */
 export function isAddress(address: string): boolean {
-  if (isHex(address) && getByteLength(address) === 20) {
+  if (
+    isHex(address) &&
+    getByteLength(address) === 20 &&
+    address.length % 2 === 0
+  ) {
     return true;
   }
   return false;
