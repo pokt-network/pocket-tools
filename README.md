@@ -161,3 +161,21 @@ Gets a list of apps from the chain, depending on the pagination limits set.
   - `rpcUrl?`: The RPC URL to use. Defaults to a public, sponsored by POKT endpoint.
   - `stakingStatus?`: If the app fetches are staked, unstaked, or being unstaked.
 
+### getNode()
+
+```js
+async function getNode(
+  address: string;
+  options?: {
+    height?: number;
+    rpcUrl?: string;
+  }: NodeQueryParams
+): Promise<NodeQueryResponse>
+```
+Gets a node from the chain.
+
+##### Parameters
+
+  - `address`: Account address.
+  - `height?`: Get the account information at a specific block.
+  - `rpcUrl?`: The RPC URL to use. Defaults to a public, sponsored by POKT endpoint.
